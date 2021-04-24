@@ -2,6 +2,7 @@ import numpy as np
 
 import math
 
+
 def Rastrigin(chromosome):
     fitness = 3 * len(chromosome)
     for i in range(len(chromosome)):
@@ -26,11 +27,12 @@ def Griewank(chromosome):
         part2 *= math.cos(float(chromosome[i].value) / math.sqrt(i + 1))
     return 1 + (float(part1) / 4000.0) - float(part2)
 
+
 def Ackley(chromosome):
-	firstSum = 0.0
-	secondSum = 0.0
-	for c in chromosome:
-		firstSum += c.value**2.0
-		secondSum += math.cos(2.0*math.pi*c.value)
-	n = float(len(chromosome))
-	return -20.0*math.exp(-0.2*math.sqrt(firstSum/n)) - math.exp(secondSum/n) + 20 + math.e
+    firstSum = 0.0
+    secondSum = 0.0
+    for c in chromosome:
+        firstSum += c.value ** 2.0
+        secondSum += math.cos(2.0 * math.pi * c.value)
+    n = float(len(chromosome))
+    return -20.0 * math.exp(-0.2 * math.sqrt(firstSum / n)) - math.exp(secondSum / n) + 20 + math.e
