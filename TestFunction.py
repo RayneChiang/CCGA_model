@@ -36,3 +36,25 @@ def Ackley(chromosome):
         secondSum += math.cos(2.0 * math.pi * c.value)
     n = float(len(chromosome))
     return -20.0 * math.exp(-0.2 * math.sqrt(firstSum / n)) - math.exp(secondSum / n) + 20 + math.e
+
+
+def Xin_She_Yang(chromosome):
+    firstex = 0.0
+    secondex = 0.0
+    multi = 0.0
+    for c in chromosome:
+        firstex += math.pow(c.value/15.0, 10)
+        secondex += c.value ** 2
+        multi = multi* (np.cos(c.value)**2)
+
+    return math.exp(-firstex) - 2*math.exp(-secondex)*multi
+
+
+def Xin_She_Yang_2(chromosome):
+    firstsum = 0.0
+    secondsum = 0.0
+    for c in chromosome:
+        firstsum += math.fabs(c.value)
+        secondsum += math.sin(c.value**2)
+
+    return  firstsum*math.exp(-secondsum)
