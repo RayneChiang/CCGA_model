@@ -1,11 +1,12 @@
 import numpy as np
 import math
 import random
-from TestFunction import Rastrigin, Schewefel, Griewank, Ackley
+from TestFunction import Rastrigin, Schewefel, Griewank, Ackley, Xin_She_Yang, Xin_She_Yang_2
 import time
 from tqdm import tqdm
 import pandas as pd
 from decimal import Decimal
+from PyBenchFCN import SingleObjectiveProblem as SOP
 
 
 class IndiString:
@@ -144,6 +145,77 @@ def ccga_model(pop_list, func, epoch):
     return pop_list, fitness_max
 
 
+# extend s*d
+def ccga_svg_model(pop_list, func, epoch):
+    eval_list = list(map(func, pop_list))
+    fitness_max = [np.min(eval_list)]
+    fitness_min = [np.max(eval_list)]
+    for _ in tqdm(range(epoch)):
+        species_list = []
+        gen_list = [pop_list[np.nanargmin(eval_list)]]
+        for s in range(0, 10):
+            s_list = []
+            for pop in pop_list:
+                s_list.append([pop[s*10], pop[s*10+1], pop[s*10+2], pop[s*10+3], pop[s*10+4],
+                               pop[s*10+5], pop[s*10+6], pop[s*10+7], pop[s*10+8], pop[s*10+9]])
+            s_eval_list = list(map(func, s_list))
+            fmin = np.max(s_eval_list)
+            f_list = fmin - s_eval_list
+            s_list = scaling_window(f_list, s_list)
+            a_list = []
+            for i in range(0, 100):
+                s_return_list = []
+                while len(s_return_list) < len(init_list):
+                    child = crossover_mute(func, s_list, crossover_rate=0.6)
+                    s_return_list.extend(child)
+                a_list.append(s_return_list)
+            species_list.extend(a_list)
+        # re-evaluate
+        gen_list.extend(list(map(list, zip(*species_list)))[0:-1])
+        eval_list = list(map(func, gen_list))
+        fitness_max.append(np.min(eval_list))
+        fitness_min.append(np.max(eval_list))
+        pop_list = gen_list
+
+    return pop_list, fitness_max
+
+
+
+def ccga_svgr_model(pop_list, func, epoch):
+    eval_list = list(map(func, pop_list))
+    fitness_max = [np.min(eval_list)]
+    fitness_min = [np.max(eval_list)]
+    for _ in tqdm(range(epoch)):
+        species_list = []
+        gen_list = [pop_list[np.nanargmin(eval_list)]]
+        for s in range(0, 5):
+            s_list = []
+            for pop in pop_list:
+                s_list.append([pop[random.randint(0, num_parameter-1)], pop[random.randint(0, num_parameter-1)],pop[random.randint(0, num_parameter-1)],
+                               pop[random.randint(0, num_parameter-1)],pop[random.randint(0, num_parameter-1)]])
+            s_eval_list = list(map(func, s_list))
+            fmin = np.max(s_eval_list)
+            f_list = fmin - s_eval_list
+            s_list = scaling_window(f_list, s_list)
+            a_list = []
+            for i in range(0, 200):
+                s_return_list = []
+                while len(s_return_list) < len(init_list):
+                    child = crossover_mute(func, s_list, crossover_rate=0.6)
+                    s_return_list.extend(child)
+                a_list.append(s_return_list)
+            species_list.extend(a_list)
+        # re-evaluate
+        gen_list.extend(list(map(list, zip(*species_list)))[0:-1])
+        eval_list = list(map(func, gen_list))
+        fitness_max.append(np.min(eval_list))
+        fitness_min.append(np.max(eval_list))
+        pop_list = gen_list
+
+    return pop_list, fitness_max
+
+
+
 def scaling_window(fitness_list, pop_list):
     if sum(fitness_list) != 0:
         proportion = fitness_list / sum(fitness_list) * len(fitness_list)
@@ -179,7 +251,7 @@ def ga_model(pop_list, func, epoch):
         fitness_max.append(np.min(eval_list))
         fitness_min.append(np.max(eval_list))
         pop_list = gen_list
-    return pop_list, fitness_max, fitness_min
+    return pop_list, fitness_max
 
 
 if __name__ == '__main__':
@@ -188,38 +260,59 @@ if __name__ == '__main__':
     min_value = -5.12
     max_value = 5.12
     init_list = init_pop(population_size=100, n=num_parameter)
-    pop_list_ga, fitness_max, fitness_min = ga_model(init_list, Rastrigin, 1000)
-    np.save('Rastrigin_ga.npy', np.array(fitness_max))
     pop_list_ccga, fitness_ccga = ccga_model(init_list, Rastrigin, 1000)
-    np.save('Rastrigin_ccga.npy', np.array(fitness_ccga))
+    np.save('Rccga.npy', np.array(fitness_ccga))
+    pop_list_svg_ccga, fitness_svg_ccga = ccga_svgr_model(init_list, Rastrigin, 1000)
+    np.save('R_s_ccga.npy', np.array(fitness_svg_ccga))
 
     pupulation_size = 100
     num_parameter = 10
     min_value = -500
     max_value = 500
     init_list = init_pop(population_size=100, n=num_parameter)
-    pop_list_ga, fitness_max, fitness_min = ga_model(init_list, Schewefel, 1000)
-    np.save('Schewefel_ga.npy', np.array(fitness_max))
-    pop_list_ccga, fitness_ccga = ccga_model(init_list, Schewefel, 1000)
-    np.save('Schewefel_ccga.npy', np.array(fitness_ccga))
-    #
-    pupulation_size = 100
-    num_parameter = 10
-    min_value = -512
-    max_value = 512
-    init_list = init_pop(population_size=100, n=num_parameter)
-    pop_list_ga, fitness_max, fitness_min = ga_model(init_list, Griewank, 1000)
-    np.save('Griewank_ga.npy', np.array(fitness_max))
-    pop_list_ccga, fitness_ccga = ccga_model(init_list, Griewank, 1000)
-    np.save('Griewank_ccga.npy', np.array(fitness_ccga))
-    #
-    #
+    pop_list_ga, fitness_max= ccga_model(init_list, Schewefel, 1000)
+    np.save('S_ga.npy', np.array(fitness_max))
+    pop_list_ccga, fitness_ccga = ccga_svgr_model(init_list, Schewefel, 1000)
+    np.save('S_s_ccga.npy', np.array(fitness_ccga))
+
+
+
+
     pupulation_size = 100
     num_parameter = 30
     min_value = -30
     max_value = 30
     init_list = init_pop(population_size=100, n=num_parameter)
-    pop_list_ga, fitness_max, fitness_min = ga_model(init_list, Ackley, 1000)
-    np.save('Ackley_ga.npy', np.array(fitness_max))
-    pop_list_ccga, fitness_ccga = ccga_model(init_list, Ackley, 1000)
-    np.save('Ackley_ccga.npy', np.array(fitness_ccga))
+    pop_list_ga, fitness_max = ccga_model(init_list, Ackley, 1000)
+    np.save('A_ga.npy', np.array(fitness_max))
+    pop_list_ccga, fitness_ccga = ccga_svgr_model(init_list, Ackley, 1000)
+    np.save('A_s_ccga.npy', np.array(fitness_ccga))
+
+    # #
+    pupulation_size = 100
+    num_parameter = 10
+    min_value = -512
+    max_value = 512
+    init_list = init_pop(population_size=100, n=num_parameter)
+    pop_list_ga, fitness_max= ccga_model(init_list, Griewank, 1000)
+    np.save('G_ga.npy', np.array(fitness_max))
+    pop_list_ccga, fitness_ccga = ccga_svgr_model(init_list, Griewank, 1000)
+    np.save('G_svg_ccga.npy', np.array(fitness_ccga))
+    #
+    #
+
+
+    pupulation_size = 100
+    num_parameter = 1000
+    min_value = -2*np.pi
+    max_value = 2*np.pi
+    init_list = init_pop(population_size=100, n=num_parameter)
+    # # pop_list_ga, fitness_max= ga_model(init_list, Xin_She_Yang_2, 100)
+    # # print(fitness_max)
+    # # np.save('X_ga_2_400.npy', np.array(fitness_max))
+    pop_list_ccga, fitness_ccga = ccga_model(init_list, Xin_She_Yang, 10)
+    print(fitness_ccga)
+    np.save('X_ccga_1_1000.npy', np.array(fitness_ccga))
+    pop_list_ccga, fitness_ccga = ccga_svgr_model(init_list, Xin_She_Yang, 10)
+    print(fitness_ccga)
+    np.save('X_svg_ccga_1_1000.npy', np.array(fitness_ccga))
